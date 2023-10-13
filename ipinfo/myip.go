@@ -6,6 +6,7 @@ import (
 	"github.com/zhangyu0310/zlogger"
 	"io"
 	"math/rand"
+	"net"
 	"net/http"
 	"strings"
 )
@@ -22,8 +23,41 @@ var (
 	ErrGetIPDifferent = errors.New("get ip different")
 )
 
+func getHttpClientUseIPv4() (*http.Client, error) {
+	addresses, err := net.InterfaceAddrs()
+	if err != nil {
+		return nil, err
+	}
+	var localAddr string
+	for _, addr := range addresses {
+		if ipNet, ok := addr.(*net.IPNet); ok && !ipNet.IP.IsLoopback() {
+			if ipNet.IP.To4() != nil {
+				localAddr = ipNet.IP.String()
+				break
+			}
+		}
+	}
+
+	dialer := &net.Dialer{
+		LocalAddr: &net.TCPAddr{IP: net.ParseIP(localAddr)},
+	}
+	transport := &http.Transport{
+		DialContext: dialer.DialContext,
+	}
+	return &http.Client{Transport: transport}, nil
+}
+
 func getIP(url string) (string, error) {
-	resp, err := http.Get(url)
+	// NOTE: We must use a customized http client,
+	//       because dialer in default http client will use
+	//       IPv6 address to connect to the url, and that will get IPv6 back.
+	//       But we just need IPv4.
+	client, err := getHttpClientUseIPv4()
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := client.Get(url)
 	if err != nil {
 		return "", err
 	}
