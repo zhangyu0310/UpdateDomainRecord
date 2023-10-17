@@ -8,6 +8,10 @@ import (
 	"github.com/zhangyu0310/zlogger"
 )
 
+const (
+	ErrDomainRecordDuplicate = "DomainRecordDuplicate"
+)
+
 // CreateClient 使用AK&SK初始化账号Client
 //
 //	@param accessKeyId
@@ -31,6 +35,9 @@ func handleSdkErr(err error) error {
 	var sdkErr = &tea.SDKError{}
 	if err != nil {
 		if tmp, ok := err.(*tea.SDKError); ok {
+			if tea.StringValue(tmp.Code) == ErrDomainRecordDuplicate {
+				return nil
+			}
 			sdkErr = tmp
 		} else {
 			sdkErr.Message = tea.String(err.Error())
@@ -63,6 +70,10 @@ func RunOnce(ip string) (err error) {
 	zlogger.Info("Describe domain records success!")
 
 	for _, record := range response.Body.DomainRecords.Record {
+		if tea.StringValue(record.Value) == ip {
+			zlogger.DebugF("Skip %s domain record update, ip not changed", *record.RR)
+			continue
+		}
 		updateRequest := &dns.UpdateDomainRecordRequest{
 			Lang:     tea.String("en"),
 			RR:       record.RR,

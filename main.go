@@ -53,17 +53,19 @@ func main() {
 		if lastIp == ip {
 			zlogger.Info("IP not changed, but sameCount >= threshold, update",
 				"ip:", ip, "sameCount:", sameCount)
+			// Reset check condition
+			sameCount = 0
 		} else {
 			zlogger.Info("IP changed, update",
 				"lastIp:", lastIp, "ip:", ip, "sameCount:", sameCount)
 		}
-		// Reset check condition
-		lastIp = ip
-		sameCount = 0
 
 		err = sdk.RunOnce(ip)
 		if err != nil {
 			zlogger.Error("Run once failed, err:", err)
+		} else {
+			// Run success, update lastIp
+			lastIp = ip
 		}
 	}
 	doWhatYouWant()
