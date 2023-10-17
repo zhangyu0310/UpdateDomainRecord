@@ -20,9 +20,10 @@ type Config struct {
 	AccessKeySecret string `json:"access_key_secret"`
 	DomainName      string `json:"domain_name"`
 	// Endpoint 请参考 https://api.aliyun.com/product/Alidns
-	EndPoint  string `json:"end_point"`
-	Frequency uint   `json:"frequency"`
-	LogPath   string `json:"log_path"`
+	EndPoint           string `json:"end_point"`
+	Frequency          uint   `json:"frequency"`
+	LogPath            string `json:"log_path"`
+	SameCountThreshold uint   `json:"same_count_threshold"`
 }
 
 func NewConfig() *Config {

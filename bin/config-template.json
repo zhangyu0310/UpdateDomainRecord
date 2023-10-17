@@ -4,5 +4,6 @@
   "domain_name": "",
   "end_point": "",
   "frequency": 0,
-  "log_path": ""
+  "log_path": "",
+  "same_count_threshold": 0
 }

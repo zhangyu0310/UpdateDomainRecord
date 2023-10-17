@@ -6,11 +6,12 @@ import (
 	"UpdateDomainRecord/sdk"
 	"flag"
 	"fmt"
-	"github.com/zhangyu0310/zlogger"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/zhangyu0310/zlogger"
 )
 
 var (
@@ -34,12 +35,32 @@ func main() {
 	//监听指定信号 kill
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
+	var lastIp string
+	sameCount := uint(0) // 兜底策略，连续相同的ip次数大于阈值，则执行一次更新
 	doWhatYouWant := func() {
 		ip, err := ipinfo.GetMyIP()
 		if err != nil {
 			zlogger.Error("Get my ip failed, err:", err)
 			return
 		}
+
+		if lastIp == ip && sameCount < cfg.SameCountThreshold {
+			sameCount++
+			zlogger.Info("IP not changed, skip",
+				"ip:", ip, "sameCount:", sameCount)
+			return
+		}
+		if lastIp == ip {
+			zlogger.Info("IP not changed, but sameCount >= threshold, update",
+				"ip:", ip, "sameCount:", sameCount)
+		} else {
+			zlogger.Info("IP changed, update",
+				"lastIp:", lastIp, "ip:", ip, "sameCount:", sameCount)
+		}
+		// Reset check condition
+		lastIp = ip
+		sameCount = 0
+
 		err = sdk.RunOnce(ip)
 		if err != nil {
 			zlogger.Error("Run once failed, err:", err)
